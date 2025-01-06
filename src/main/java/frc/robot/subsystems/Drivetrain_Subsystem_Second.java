@@ -74,11 +74,13 @@ public class Drivetrain_Subsystem_Second extends SubsystemBase {
     SwerveDriveTelemetry.verbosity = TelemetryVerbosity.HIGH;
     System.out.println("Before try catch");
     try {
-      mSwerveDrive = new SwerveParser(directory).createSwerveDrive(maxSpeed, angleConversionFactor, driveConversionFactor);
-  } catch (NoSuchMethodError e) {
-      System.err.println("NoSuchMethodError: " + e.getMessage());
-      e.printStackTrace(); // This will show the specific method that is missing.
-      throw new RuntimeException(e);
+      SwerveParser sp = new SwerveParser(directory);
+      System.out.println("After sp instantiation");
+      mSwerveDrive = sp.createSwerveDrive(maxSpeed, angleConversionFactor, driveConversionFactor);
+  // } catch (NoSuchMethodError e) {
+  //     System.err.println("NoSuchMethodError: " + e.getMessage());
+  //     e.printStackTrace(); // This will show the specific method that is missing.
+  //     throw new RuntimeException(e);
   } catch (Exception e) {
       System.err.println("Exception during SwerveDrive creation: " + e.getMessage());
       e.printStackTrace();
