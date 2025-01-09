@@ -143,4 +143,6 @@ public final class Constants {
 public static final double LEFT_Y_DEADBAND = 0.05;
 
 public static final double LEFT_X_DEADBAND = 0.05;
+
+public static final double DEADBAND = 0.05;
 }

@@ -6,6 +6,7 @@ package frc.robot.subsystems;
 
 import java.io.File;
 import java.util.function.DoubleSupplier;
+import java.util.function.Supplier;
 
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.commands.PathfindingCommand;
@@ -60,7 +61,7 @@ public class Drivetrain_Subsystem_Second extends SubsystemBase {
         // Angle conversion factor is 360 / (GEAR RATIO * ENCODER RESOLUTION)
     //  In this case the gear ratio is 12.8 motor revolutions per wheel rotation.
     //  The encoder resolution per motor revolution is 1 per motor revolution.
-    double angleConversionFactor = SwerveMath.calculateDegreesPerSteeringRotation(21.428571);
+    double angleConversionFactor = SwerveMath.calculateDegreesPerSteeringRotation(16.8);
     // Motor conversion factor is (PI * WHEEL DIAMETER IN METERS) / (GEAR RATIO * ENCODER RESOLUTION).
     //  In this case the wheel diameter is 4 inches, which must be converted to meters to get meters/second.
     //  The gear ratio is 6.75 motor revolutions per wheel rotation.
@@ -74,9 +75,7 @@ public class Drivetrain_Subsystem_Second extends SubsystemBase {
     SwerveDriveTelemetry.verbosity = TelemetryVerbosity.HIGH;
     System.out.println("Before try catch");
     try {
-      SwerveParser sp = new SwerveParser(directory);
-      System.out.println("After sp instantiation");
-      mSwerveDrive = sp.createSwerveDrive(maxSpeed, angleConversionFactor, driveConversionFactor);
+      mSwerveDrive = new SwerveParser(directory).createSwerveDrive(maxSpeed);
   // } catch (NoSuchMethodError e) {
   //     System.err.println("NoSuchMethodError: " + e.getMessage());
   //     e.printStackTrace(); // This will show the specific method that is missing.
@@ -108,6 +107,8 @@ public class Drivetrain_Subsystem_Second extends SubsystemBase {
     mSwerveDrive.setHeadingCorrection(false); // Heading correction should only be used while controlling the robot via angle.
     mSwerveDrive.setCosineCompensator(!SwerveDriveTelemetry.isSimulation);
     setupPathPlanner(); // Disables cosine compensation for simulations since it causes discrepancies not seen in real life.
+    mSwerveDrive.pushOffsetsToEncoders(); // Set the absolute encoder to be used over the internal encoder and push the offsets onto it. Throws warning if not possible
+
   }
 
 
@@ -321,6 +322,18 @@ private static DoubleSupplier makeAngleMotorTemperatureSupplier(SwerveModule pMo
     mSwerveDrive.driveFieldOriented(velocity);
   }
 
+  /**
+   * Drive the robot given a chassis field oriented velocity.
+   *
+   * @param velocity Velocity according to the field.
+   */
+  public Command driveFieldOriented(Supplier<ChassisSpeeds> velocity)
+  {
+    return run(() -> {
+      mSwerveDrive.driveFieldOriented(velocity.get());
+    });
+  }
+
   public SwerveDriveKinematics getKinematics()
   {
     return mSwerveDrive.kinematics;
@@ -334,7 +347,28 @@ private static DoubleSupplier makeAngleMotorTemperatureSupplier(SwerveModule pMo
   {
     mSwerveDrive.setMotorIdleMode(brake);
   }
+  private boolean isRedAlliance()
+  {
+    var alliance = DriverStation.getAlliance();
+    return alliance.isPresent() ? alliance.get() == DriverStation.Alliance.Red : false;
+  }
+  public void zeroGyroWithAlliance()
+  {
+    if (isRedAlliance())
+    {
+      zeroGyro();
+      //Set the pose 180 degrees
+      resetOdometry(new Pose2d(getPose().getTranslation(), Rotation2d.fromDegrees(180)));
+    } else
+    {
+      zeroGyro();
+    }
+  }
 
+  public SwerveDrive getSwerveDrive()
+  {
+    return mSwerveDrive;
+  }
   @Override
   public void periodic() {
   }
