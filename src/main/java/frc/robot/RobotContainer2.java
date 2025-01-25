@@ -46,7 +46,7 @@ public class RobotContainer2 {
 
   private final IntakeSubsystem mIntakeSubsystem = new IntakeSubsystem();
 
-  private final ArmSubsystem mArmSubsystem = new ArmSubsystem();
+  // private final ArmSubsystem mArmSubsystem = new ArmSubsystem();
 
   private final LoaderSubsystem mLoaderSubsystem = new LoaderSubsystem();
   private final LedSubsystem mLedSubsystem = new LedSubsystem();
@@ -56,13 +56,15 @@ public class RobotContainer2 {
   // Replace with CommandPS4Controller or CommandJoystick if needed
   final CommandXboxController driverXbox = new CommandXboxController(0);
 
+  
     SwerveInputStream driveAngularVelocity = SwerveInputStream.of(drivebase.getSwerveDrive(),
-                                                                () -> driverXbox.getLeftY() * -1,
-                                                                () -> driverXbox.getLeftX() * -1)
-                                                            .withControllerRotationAxis(driverXbox::getRightX)
+                                                                () -> driverXbox.getLeftX() * -1,
+                                                                () -> driverXbox.getLeftY() * -1)
+                                                            .withControllerRotationAxis(driverXbox::getLeftTriggerAxis)
                                                             .deadband(Constants.DEADBAND)
-                                                            .scaleTranslation(0.8)
-                                                            .allianceRelativeControl(true);
+                                                            .scaleTranslation(0.5);
+    SwerveInputStream driveRobotOrientedInputStream = driveAngularVelocity.copy().robotRelative(true)
+                                                             .allianceRelativeControl(false);
 
   /**
    * Clone's the angular velocity input stream and converts it to a fieldRelative input stream.
@@ -88,12 +90,13 @@ public class RobotContainer2 {
 
 //   Command driveSetpointGen = drivebase.driveWithSetpointGeneratorFieldRelative(driveDirectAngle);
 
+  Command driveRobotOrientedAngularVelocity  = drivebase.driveFieldOriented(driveRobotOrientedInputStream);
 
 
 // This is all the code needed to make turning in sim possible and accurate.
   SwerveInputStream driveAngularVelocitySim = SwerveInputStream.of(drivebase.getSwerveDrive(),
-                                                                   () -> -driverXbox.getLeftY(),
-                                                                   () -> -driverXbox.getLeftX())
+                                                                   () -> -driverXbox.getLeftY()* -1,
+                                                                   () -> -driverXbox.getLeftX() * -1)
                                                                .withControllerRotationAxis(() -> driverXbox.getRawAxis(2))
                                                                .deadband(Constants.DEADBAND)
                                                                .scaleTranslation(0.8)
@@ -111,6 +114,8 @@ public class RobotContainer2 {
 
   Command driveFieldOrientedDirectAngleSim = drivebase.driveFieldOriented(driveDirectAngleSim);
 
+  Command driveCommand; 
+  
 //   Command driveSetpointGenSim = drivebase.driveWithSetpointGeneratorFieldRelative(driveDirectAngleSim);
 
   /**
@@ -119,6 +124,7 @@ public class RobotContainer2 {
   public RobotContainer2()
   {
     configureBindings();
+    System.out.println("Out of configureBindings");
     mCommandChooser = AutoBuilder.buildAutoChooser();
     SmartDashboard.putData("Autonomous Chooser", mCommandChooser);
   }
@@ -135,24 +141,30 @@ public class RobotContainer2 {
     NamedCommands.registerCommand(
         "grab_note", new GrabNoteCommand(mLoaderSubsystem, mIntakeSubsystem));
     NamedCommands.registerCommand("shoot_note", new ShootNote(mShooterSubsystem, mLoaderSubsystem));
-    NamedCommands.registerCommand("move_arm_down", new MoveArmDownCommand(mArmSubsystem));
-    NamedCommands.registerCommand(
-        "move_arm_to_amp_position", new MoveArmToAmpCommand(mArmSubsystem));
-    NamedCommands.registerCommand(
-        "move_arm_to_speaker_position",
-        new SetArmToAngleCommand(mArmSubsystem, Units.Degrees.of(10.0)));
+    // NamedCommands.registerCommand("move_arm_down", new MoveArmDownCommand(mArmSubsystem));
+    // NamedCommands.registerCommand(
+    //     "move_arm_to_amp_position", new MoveArmToAmpCommand(mArmSubsystem));
+    // NamedCommands.registerCommand(
+    //     "move_arm_to_speaker_position",
+    //     new SetArmToAngleCommand(mArmSubsystem, Units.Degrees.of(10.0)));
 
-    Trigger hasNoteTrigger = new Trigger(mLoaderSubsystem::hasNote);
-    var inPositionToShootTrigger =
-        new Trigger(() -> mArmSubsystem.getArmPosition().isNear(Units.Degrees.of(10.0), 0.25));
-    hasNoteTrigger.whileTrue(mLedSubsystem.writeStaticColor(0, 255, 0, 1.0));
-    inPositionToShootTrigger.whileTrue(mLedSubsystem.colorFadeCommand(255, 255, 255));
-    drivebase.setDefaultCommand(!RobotBase.isSimulation() ? driveFieldOrientedDirectAngle : driveFieldOrientedDirectAngleSim);
+    // Trigger hasNoteTrigger = new Trigger(mLoaderSubsystem::hasNote);
+    // var inPositionToShootTrigger =
+    //     new Trigger(() -> mArmSubsystem.getArmPosition().isNear(Units.Degrees.of(10.0), 0.25));
+    // hasNoteTrigger.whileTrue(mLedSubsystem.writeStaticColor(0, 255, 0, 1.0));
+    // inPositionToShootTrigger.whileTrue(mLedSubsystem.colorFadeCommand(255, 255, 255));
+    // drivebase.setDefaultCommand(!RobotBase.isSimulation() ? driveFieldOrientedAnglularVelocity : driveFieldOrientedDirectAngleSim);
+    driveCommand = drivebase.driveCommand(() -> driverXbox.getLeftX(), () -> driverXbox.getLeftY(), () -> driverXbox.getRightX());
+    System.out.println("Initialized DriveCommand command");
+    drivebase.setDefaultCommand(driveCommand);
+
     if (Robot.isSimulation())
     {
       driverXbox.start().onTrue(Commands.runOnce(() -> drivebase.resetOdometry(new Pose2d(3, 3, new Rotation2d()))));
     }
     // hasNoteTrigger.whileFalse(mLedSubsystem.strobeColor(255, 0, 0));
+    // Command driveFieldOrientedDirectAngle      = drivebase.driveFieldOriented(driveDirectAngle);
+    // Command driveFieldOrientedAnglularVelocity = drivebase.driveFieldOriented(driveAngularVelocity);
 
     // driverXbox
     //     .a()

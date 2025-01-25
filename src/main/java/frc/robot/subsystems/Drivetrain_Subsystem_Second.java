@@ -28,6 +28,7 @@ import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardLayout;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
@@ -105,10 +106,11 @@ public class Drivetrain_Subsystem_Second extends SubsystemBase {
     addVoltageToLayout(mBackRightModuleLayout, mSwerveDrive.getModules()[3]);
 
     mSwerveDrive.setHeadingCorrection(false); // Heading correction should only be used while controlling the robot via angle.
-    mSwerveDrive.setCosineCompensator(!SwerveDriveTelemetry.isSimulation);
+    mSwerveDrive.setCosineCompensator(false);
     setupPathPlanner(); // Disables cosine compensation for simulations since it causes discrepancies not seen in real life.
+    System.out.println("Set up pathPlanner");
     mSwerveDrive.pushOffsetsToEncoders(); // Set the absolute encoder to be used over the internal encoder and push the offsets onto it. Throws warning if not possible
-
+    System.out.println("Pushed offset values to encoders");
   }
 
 
@@ -371,5 +373,15 @@ private static DoubleSupplier makeAngleMotorTemperatureSupplier(SwerveModule pMo
   }
   @Override
   public void periodic() {
+    // System.out.println(getSwerveDrive().getModules()[0].getAbsolutePosition());
+    // System.out.println(getSwerveDrive().getModules()[1].getAbsolutePosition());
+    // System.out.println(getSwerveDrive().getModules()[2].getAbsolutePosition());
+    // System.out.println(getSwerveDrive().getModules()[3].getAbsolutePosition());
+
+    SmartDashboard.putNumber("Backleft relative position", getSwerveDrive().getModules()[0].getAbsolutePosition());
+    SmartDashboard.putNumber("Backright relative position", getSwerveDrive().getModules()[1].getAbsolutePosition());
+    SmartDashboard.putNumber("frontleft relative position", getSwerveDrive().getModules()[2].getAbsolutePosition());
+    SmartDashboard.putNumber("Backleft relative position", getSwerveDrive().getModules()[2].getAbsolutePosition());
+
   }
 }
